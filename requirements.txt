@@ -1,0 +1,5 @@
+CacheControl==0.14.0
+filecache==0.81
+pandas==2.2.2
+requests==2.31.0
+xmltodict==0.13.0
