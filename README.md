@@ -17,10 +17,3 @@
 
 - [旭川地方気象台　が公開する　美瑛町　での　警報・注意報　を取得するサンプル](https://github.com/aktnk/weather_warnings/tree/main/samples/sample_BieiTown)
 - [SQLite を使って取得動作、警報・注意報出力動作を改善する](https://github.com/aktnk/weather_warnings/tree/main/samples/sample_UseDB)
-
-## 実行環境
-
-下記環境にて Python 仮想環境構築＆有効化した上で、`pip install -r requirements.txt`で必要なモジュールをインストールします。
-
-- Windows 11 Professional
-- Python 3.10.5

@@ -80,3 +80,10 @@ sqlite を使い、下記を実現する
    {'kindName': '濃霧注意報', 'status': '継続'}は公開済み
    (venv310) $
    ```
+
+## 動作確認環境
+
+本サンプルは下記環境にて動作確認を実施
+
+- WSL2 Ubuntu 20.04.6 LTS on Windows 11 Professional
+- Python 3.10.3
