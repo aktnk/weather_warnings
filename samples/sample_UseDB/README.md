@@ -39,6 +39,16 @@ sqlite を使い、下記を実現する
    (venv310) $ python models.py
    ```
 
+1. MS Teams へ通知する場合
+
+   1. incomming webhook の URL を環境変数 TEAMS_WEBHOOK に設定する
+
+      ```
+      (venv310) $ export TEAMS_WEBHOOK=(MS Teamsに設定したincomming webhookのURL)
+      ```
+
+   1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数を`True`に指定する
+
 1. 指定した市町の警報・注意報を取得する
 
    ```
