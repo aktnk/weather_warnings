@@ -7,8 +7,11 @@ from pytz import timezone
 from db_setting import session
 from models import CityReport, Extra
 
+import pymsteams
+
 EXTRA = 'https://www.data.jma.go.jp/developer/xml/feed/extra.xml'
 FILENAME = os.path.join("data",EXTRA.split('/')[-1])
+WEBHOOK_URL = os.getenv('TEAMS_WEBHOOK')
 
 class JMAFeed:
     """
@@ -267,11 +270,11 @@ class VPWW54BodyWarningTypeCity:
     def addKind( self, kind_name, status):
         self.kind.append( {'kindName': kind_name, 'status': status})
 
-def printJMAwarningsInfo(feed, obs, cities):
+def printJMAwarningsInfo(feed, obs, cities, teams_notify):
     entry = feed.getLatestVPWW54EntryByLMO(obs)
     if entry is None:
         print(f"{obs}では現在警報・注意報の発表なし")
-        # lmoがobsのデータあれば、削除
+        # lmoがobsのデータのデータの中でstatusが解除のものは削除
         deleteCityReportByLMO(obs)
     else:
         vpww54 = VPWW54XMLData( url = entry.id )
@@ -283,63 +286,60 @@ def printJMAwarningsInfo(feed, obs, cities):
             print(f"{warning}")
             print(f"===============")
             for item in warning.kind:
-                # lmoがobsで、cityがcity、kind_nameがitem['kindName']、statusがitem['status']があるか
-                # xmlfileがvpww54.filenameであれば、表示しない（すでに展開済み）
-                # xmlfileが無ければ、表示し、CityReportに登録する。
-                # xmlfileが違うものがあれば、表示しないが、xmlfileを更新する
                 if item['kindName'] is None:
                     continue
-                if isDataInCityReport(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename):
-                    # 登録済み＝公開済み
-                    print(f"{item}は公開済み")
-                else:
-                    # 登録データなし＝未公開
-                    if isNonXmlfileDataInCityReport(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename):
-                        # 違うxmlfileならデータあれば、xmlfileを更新するが発表しない
-                        print(f"{item}はxmlfile違いあり")
+                # lmoがobsで、cityがcity、kind_nameがitem['kindName']、statusがitem['status']があるか
+                ret, report = checkCityAndKindDataSameInCityReport(obs,warning.areaName,item['kindName'])
+                if ret:
+                    # 同じ市町で同じ警報・注意報のデータあり
+                    if report.status != item['status']:
+                        # statusが異なれば、Teams通知して、DB更新
+                        if teams_notify:
+                            sendTeams(control.datetime,control.publishedBy,head.infoType,warning.areaName,item['kindName'],item['status'],vpww54.url)
+                        updateCityReportByStatus(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename)
+                    elif report.xmlfile != vpww54.filename:
+                        # statusが同じだが、xmlfileが異なれば、DB更新
+                        print(f"{item}はstatus同じだが、xmlfile違いあり")
                         updateCityReportByXmlfile(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename)
                     else:
-                        print(f"{item}は未公開")
-                        createCityReport(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename)
+                        # 全て同じデータ登録済み＝公開済み
+                        print(f"{item}は全て同じデータ＝公開済み")
+                else:
+                    print(f"{item}は未公開")
+                    if teams_notify:
+                        sendTeams(control.datetime,control.publishedBy,head.infoType,warning.areaName,item['kindName'],item['status'],vpww54.url)
+                    createCityReport(obs,warning.areaName,item['kindName'],item['status'],vpww54.filename)
 
+def sendMessageByWebhook(incomming_webhook,title,message_text,button_text,button_link):
+    teams = pymsteams.connectorcard(incomming_webhook)
+    teams.title(title)
+    teams.text(message_text)
+    teams.addLinkButton(button_text,button_link)
+    teams.send()
 
-def isNonXmlfileDataInCityReport(obs,city,kind_name,status,xmlfile):
+def sendTeams(dt,obs,infoType,city,warning,status,url):
+    title = f"{obs}:{infoType}"
+    message_text = f"<h2>{city}</h2><p>{warning} : {status}</p><p>時刻 : {dt}</p>"
+    button_text = '気象庁-全国の警報・注意報を開く'
+    button_link = 'https://www.jma.go.jp/bosai/warning/#lang=ja'
+    sendMessageByWebhook(WEBHOOK_URL,title,message_text,button_text,button_link)
+
+def checkCityAndKindDataSameInCityReport(obs,city,kind_name):
     """
-    CityReportテーブルにlmoがobs,cityがcity,kind_nameがitem.kindName,statusがitem.status,xmlfileがxmlfile以外のデータあるか調べる
+    CityReportテーブルにlmoがobs,cityがcity,kind_nameがitem.kindNameのデータあるか調べる
     """
-    print(f"nonXMLfile判定: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
+    print(f"判定: {obs}, {city}, {kind_name}")
     report = session.query(CityReport).filter(
         CityReport.lmo==obs,
         CityReport.city==city,
         CityReport.kind_name==kind_name,
-        CityReport.status==status,
-        CityReport.xmlfile!=xmlfile,
         CityReport.is_delete==False).first()
     
     if report is None:
-        print("CityReporにxmlfilaが同じデータなし")
-        return False
-    print("CityReportにxmlfilaが同じデータあり")
-    return True
-
-def isDataInCityReport(obs,city,kind_name,status,xmlfile):
-    """
-    CityReportテーブルにlmoがobs,cityがcity,kind_nameがitem.kindName,statusがitem.statusのデータあるか調べる
-    """
-    print(f"判定: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
-    report = session.query(CityReport).filter(
-        CityReport.lmo==obs,
-        CityReport.city==city,
-        CityReport.kind_name==kind_name,
-        CityReport.status==status,
-        CityReport.xmlfile==xmlfile,
-        CityReport.is_delete==False).first()
-    
-    if report is None:
-        print("CityReporに同じデータなし")
-        return False
-    print("CityReportに同じデータあり")
-    return True
+        print("CityReportに同じ市町、同じ警報・注意報のデータなし")
+        return False, report
+    print("CityReportに同じ市町、同じ警報・注意報のデータあり")
+    return True, report
 
 def createCityReport(obs, city, kind_name, status, xmlfile):
     """
@@ -355,11 +355,29 @@ def createCityReport(obs, city, kind_name, status, xmlfile):
     session.add(report)
     session.commit()
 
+def updateCityReportByStatus(obs, city, kind_name, status, xmlfile):
+    """
+    CityReportテーブルのstatusを更新する
+    xmlfileが変更されていれば、xmlfileも更新する
+    """
+    print(f"update: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
+    report = session.query(CityReport).filter(
+        CityReport.lmo==obs,
+        CityReport.city==city,
+        CityReport.kind_name==kind_name,
+        CityReport.status!=status,
+        CityReport.is_delete==False).first()
+    report.status=status
+    if report.xmlfile != xmlfile:
+        report.xmlfile = xmlfile
+    report.updated_at=datetime.datetime.now()
+    session.commit()
+
 def updateCityReportByXmlfile(obs, city, kind_name, status, xmlfile):
     """
     CityReportテーブルのxmlfileを更新する
     """
-    print(f"delete: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
+    print(f"update: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
     report = session.query(CityReport).filter(
         CityReport.lmo==obs,
         CityReport.city==city,
@@ -368,32 +386,22 @@ def updateCityReportByXmlfile(obs, city, kind_name, status, xmlfile):
         CityReport.xmlfile!=xmlfile,
         CityReport.is_delete==False).first()
     report.xmlfile=xmlfile
-    session.commit()
-
-def deleteCityReportByXmlfile(obs, city, kind_name, status, xmlfile):
-    """
-    CityReportテーブルの指定したデータを削除する
-    """
-    print(f"delete: {obs}, {city}, {kind_name}, {status}, {xmlfile}")
-    report = session.query(CityReport).filter(
-        CityReport.lmo==obs,
-        CityReport.city==city,
-        CityReport.kind_name==kind_name,
-        CityReport.status==status,
-        CityReport.xmlfile==xmlfile,
-        CityReport.is_delete==False).first()
-    report.is_delete=True
+    report.updated_at=datetime.datetime.now()
     session.commit()
 
 def deleteCityReportByLMO(obs):
     """
-    CityReportテーブルから、lmoがobsのデータがあれば、削除する
+    CityReportテーブルから、lmoがobsのデータがあり、そのstatusが'解除'であれば、削除する
     """
-    reports = session.query(CityReport).filter(CityReport.lmo == obs).all()
+    reports = session.query(CityReport).filter(
+        CityReport.lmo == obs,
+        CityReport.status == '解除',
+        CityReport.is_delete == False).all()
     for report in reports:
         print(f"delete: {report.id}, {report.lmo}, {report.xmlfile}, {report.city}, {report.kind_name}, {report.status}, {report.is_delete}")
         report.is_delete = True
-        session.commit()
+        report.updated_at = datetime.datetime.now()
+    session.commit()
     
 def isExtraWithin10Minutes():
     """
@@ -427,7 +435,12 @@ def updateExtraDownloadedTime( time ):
     session.close()
 
 if __name__ == '__main__':
+    print(f"start: {datetime.datetime.now()}")
+    print(f"{WEBHOOK_URL}")
+    teams_notify = True
     feed = JMAFeed()
-    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'])
-    printJMAwarningsInfo(feed, '神奈川地方気象台',['横浜市'])
-    printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'])
+    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], False)
+    printJMAwarningsInfo(feed, '神奈川地方気象台',['横浜市'], teams_notify)
+    printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'], teams_notify)
+    printJMAwarningsInfo(feed, '宮崎地方気象台',['都城市'], teams_notify)
+    printJMAwarningsInfo(feed, '鹿児島地方気象台',['南九州市'], teams_notify)
