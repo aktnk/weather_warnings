@@ -287,6 +287,8 @@ def printJMAwarningsInfo(feed, obs, cities, teams_notify):
             print(f"===============")
             for item in warning.kind:
                 if item['kindName'] is None:
+                    if item['status'] == "発表警報・注意報はなし":
+                        deleteCityReportByStatus(obs, warning.areaName)
                     continue
                 # lmoがobsで、cityがcity、kind_nameがitem['kindName']、statusがitem['status']があるか
                 ret, report = checkCityAndKindDataSameInCityReport(obs,warning.areaName,item['kindName'])
@@ -373,6 +375,21 @@ def updateCityReportByStatus(obs, city, kind_name, status, xmlfile):
     report.updated_at=datetime.datetime.now()
     session.commit()
 
+def deleteCityReportByStatus(obs, city):
+    """
+    CityReportテーブルのその市町で記録された警報・注意報のデータを削除する
+    """
+    print(f"update: {obs}, {city}")
+    reports = session.query(CityReport).filter(
+        CityReport.lmo == obs,
+        CityReport.city == city,
+        CityReport.is_delete == False).all()
+    for report in reports:
+        print(f"delete: {report.id}, {report.lmo}, {report.xmlfile}, {report.city}, {report.kind_name}, {report.status}, {report.is_delete}")
+        report.is_delete = True
+        report.updated_at = datetime.datetime.now()
+    session.commit()
+
 def updateCityReportByXmlfile(obs, city, kind_name, status, xmlfile):
     """
     CityReportテーブルのxmlfileを更新する
@@ -439,8 +456,8 @@ if __name__ == '__main__':
     print(f"{WEBHOOK_URL}")
     teams_notify = True
     feed = JMAFeed()
-    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], False)
-    printJMAwarningsInfo(feed, '神奈川地方気象台',['横浜市'], teams_notify)
-    printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'], teams_notify)
+    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], teams_notify)
+    printJMAwarningsInfo(feed, '神奈川地方気象台',['横浜市'], False)
+    printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'],False)
     printJMAwarningsInfo(feed, '宮崎地方気象台',['都城市'], teams_notify)
     printJMAwarningsInfo(feed, '鹿児島地方気象台',['南九州市'], teams_notify)
