@@ -49,6 +49,9 @@ sqlite を使い、下記を実現する
 
    1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数を`True`に指定する
 
+   （例）下記のようにメンション付きで通知できる
+   ![MS Teams Message Sample](./image/MSTeamsSample.png)
+
 1. 指定した市町の警報・注意報を取得する
 
    ```
