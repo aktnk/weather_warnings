@@ -165,4 +165,5 @@ cython_debug/
 /samples/sample_UseDB/data/*
 !.gitkeep
 
-
+/samples/sample_UseDB/del/*
+!.gitkeep

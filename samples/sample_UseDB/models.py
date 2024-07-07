@@ -17,6 +17,23 @@ class Extra(Base):
     id = Column('id', Integer, primary_key=True, autoincrement=True)
     downloaded_at = Column('downloaded_at', DateTime, default=datetime.now(pytz.timezone('Asia/Tokyo')))
 
+class VPWW54xml(Base):
+    """
+    読み込んだVPWW54形式XMLファイルを記録するモデル
+    XMLファイルを削除するとモデルからも削除する
+    """
+
+    __tablename__ = 'vpww54xml'
+    __table_args__ = {
+        'comment': '読み込んだVPWW54形式XMLファイルを記録するテーブル'
+    }
+
+    id = Column('id', Integer, primary_key=True, autoincrement=True)
+    xmlfile = Column('xmlfile', String(50))
+    lmo = Column('lmo', String(50))
+    created_at = Column('created_at', DateTime, default=datetime.now(pytz.timezone('Asia/Tokyo')))
+    updated_at = Column('updated_at', DateTime, default=datetime.now(pytz.timezone('Asia/Tokyo')))
+    is_delete = Column('is_delete', Boolean, default=False)
 
 class CityReport(Base):
     """
