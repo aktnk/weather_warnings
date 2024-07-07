@@ -3,7 +3,8 @@
 sqlite を使い、下記を実現する
 
 - extra.xml ファイルの 10 分以内取得を行わない
-- ある市町に発表された警報・注意報について、状態に変更が無ければ、出力しない
+- ある市町に発表された警報・注意報について、状態に変更が無ければ、通知しない
+- Microsoft Teamsにメンションをつけて通知可能
 
 ## 使い方
 
@@ -41,13 +42,21 @@ sqlite を使い、下記を実現する
 
 1. MS Teams へ通知する場合
 
-   1. incomming webhook の URL を環境変数 TEAMS_WEBHOOK に設定する
+   1. incomming webhook の URL を環境変数 TEAMS_WEBHOOK、 に設定する
 
       ```
       (venv310) $ export TEAMS_WEBHOOK=(MS Teamsに設定したincomming webhookのURL)
+      (venv310) $ export MENTION_USERID=(MS TeamsのアカウントID)
+      (venv310) $ export MENTION_USERNAME=(MS Teamsの表示名)
       ```
 
-   1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数を`True`に指定する
+   1. 通知先のMSTeamsのインスタンスを作成
+
+     ```
+     myteams = MSTeams(WEBHOOK_URL, MENTION_USERID, MENTION_USERNAME)
+     ```
+     
+   1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数に、通知するMSTeamsのインスタンスを指定する
 
 1. 指定した市町の警報・注意報を取得する
 
