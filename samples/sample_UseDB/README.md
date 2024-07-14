@@ -40,14 +40,21 @@ sqlite を使い、下記を実現する
    (venv310) $ python models.py
    ```
 
+1. ダウンロードしたXMLファイルを一時保管するディレクトリを .envファイルの DATADIR へ設定する
+
+   ``` .env
+   DATADIR="data"
+   ```
+
+
 1. MS Teams へ通知する場合
 
-   1. incomming webhook の URL を環境変数 TEAMS_WEBHOOK、 に設定する
+   1. .env ファイルに　TEAMS_WEBHOOK、MENTION_USERID、MENTION_USERNAME を設定する
 
-      ```
-      (venv310) $ export TEAMS_WEBHOOK=(MS Teamsに設定したincomming webhookのURL)
-      (venv310) $ export MENTION_USERID=(MS TeamsのアカウントID)
-      (venv310) $ export MENTION_USERNAME=(MS Teamsの表示名)
+      ``` .env
+      TEAMS_WEBHOOK="(PowerAutomateに設定したTEAMS WEBHOOKのURL)"
+      MENTION_USERID="(TeamsのアカウントID)"
+      MENTION_USERNAME="(Teamsでメンションに表示する名前)"
       ```
 
    1. 通知先のMSTeamsのインスタンスを作成
@@ -59,7 +66,8 @@ sqlite を使い、下記を実現する
    1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数に、通知するMSTeamsのインスタンスを指定する
 
    （例）下記のようにメンション付きで通知できる
-   ![MS Teams Message Sample](./image/MSTeamsSample.png)
+   ![MS Teams Message Sample by Incomming Webhook](./image/MSTeamsSample.png)
+   ![MS Teams Message Sample by PowerAutomete Workflow](./image/MSTeamsSample2.png)
 
 1. 指定した市町の警報・注意報を取得する
 
