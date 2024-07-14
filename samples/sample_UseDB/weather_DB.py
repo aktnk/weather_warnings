@@ -1,9 +1,13 @@
 import datetime
 import os
+from dotenv import load_dotenv
 
 from db_setting import session
 from models import CityReport, Extra, VPWW54xml
-from JMAFeed import JMAFeed, VPWW54XMLData
+#from JMAFeed import JMAFeed
+
+load_dotenv()
+DATADIR = os.getenv('DATADIR')
 
 def checkCityAndKindDataSameInCityReport(obs,city,kind_name):
     """
@@ -131,7 +135,7 @@ def deleteVPWW54xmlByLMO(obs):
         xml.is_delete = True
         xml.updated_at = datetime.datetime.now()
         try:
-            os.rename(os.path.join(JMAFeed.DATADIR, xml.xmlfile), os.path.join('del', xml.xmlfile))
+            os.rename(os.path.join(DATADIR, xml.xmlfile), os.path.join('del', xml.xmlfile))
         except FileNotFoundError:
             pass
     session.commit()

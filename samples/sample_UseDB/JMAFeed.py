@@ -3,9 +3,15 @@ import xmltodict
 import datetime
 from pytz import timezone
 import os
+from dotenv import load_dotenv
 
 from db_setting import session
-from models import CityReport, Extra
+from models import CityReport, Extra, VPWW54xml
+
+from weather_DB import deleteCityReportByLMO, deleteVPWW54xmlByLMO, deleteCityReportByStatus, updateCityReportByStatus, updateCityReportByXmlfile, checkCityAndKindDataSameInCityReport, addVPWW54xml, createCityReport
+
+load_dotenv()
+DATADIR = os.getenv('DATADIR')
 
 class JMAFeed:
     """
@@ -13,7 +19,6 @@ class JMAFeed:
     """
     EXTRA = 'https://www.data.jma.go.jp/developer/xml/feed/extra.xml'
     VPWW54_TITLE='気象警報・注意報（Ｈ２７）'
-    DATADIR = 'data'
     FILENAME = os.path.join(DATADIR, EXTRA.split('/')[-1])
 
     def __init__(self):
@@ -114,24 +119,26 @@ class VPWW54XMLData:
     VPWW54形式のXMLデータのクラス
     """
     
-    def __init__(self, url):
+    def __init__(self, url, obs):
         self.url = url
         self.filename = url.split('/')[-1]
         self.warnings = []
         self.dict = {}
+        self.lmo = obs
 
     def getData(self):
         """
         VPWW54形式のxmlファイルがダウンロード済みであればファイルから、そうでなければURLから取得する
         """
         # 当該xmlファイルが存在するか？
-        filepath = os.path.join( JMAFeed.DATADIR, self.filename)
+        filepath = os.path.join( DATADIR, self.filename)
         if (os.path.isfile(filepath)):
             print(f"xmlfile read:{self.filename}")
             response = self.readXMLfile(filepath)
         else:
             response = requests.get(self.url).content
             print(f"xmlfile download 1:{self.filename}")
+            addVPWW54xml(self.lmo, self.filename)
             with open(filepath, mode='wb') as f:
                     f.write(response)
 
@@ -162,7 +169,7 @@ class VPWW54XMLData:
         # Headタグ情報の取得
         self.head = VPWW54Head(
             title = self.dict['Report']['Head']['Title'],
-            report_datetime = datetime.datetime.strptime(self.dict['Report']['Head']['ReportDateTime'],'%Y-%m-%dT%H:%M:%S%z'),
+            report_datetime = datetime.datetime.strptime(self.dict['Report']['Head']['ReportDateTime'].replace('+09:00','+0900'),'%Y-%m-%dT%H:%M:%S%z'),
             info_type = self.dict['Report']['Head']['InfoType'],
             info_kind = self.dict['Report']['Head']['InfoKind'],
         )
