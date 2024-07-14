@@ -4,7 +4,7 @@ sqlite を使い、下記を実現する
 
 - extra.xml ファイルの 10 分以内取得を行わない
 - ある市町に発表された警報・注意報について、状態に変更が無ければ、通知しない
-- Microsoft Teamsにメンションをつけて通知可能
+- Microsoft Teams にメンションをつけて通知可能
 
 ## 使い方
 
@@ -40,30 +40,29 @@ sqlite を使い、下記を実現する
    (venv310) $ python models.py
    ```
 
-1. ダウンロードしたXMLファイルを一時保管するディレクトリを .envファイルの DATADIR へ設定する
+1. ダウンロードした XML ファイルを一時保管するディレクトリを .env ファイルの DATADIR へ設定する
 
-   ``` .env
+   ```.env
    DATADIR="data"
    ```
 
-
 1. MS Teams へ通知する場合
 
-   1. .env ファイルに　TEAMS_WEBHOOK、MENTION_USERID、MENTION_USERNAME を設定する
+   1. .env ファイルに　 TEAMS_WEBHOOK、MENTION_USERID、MENTION_USERNAME を設定する
 
-      ``` .env
+      ```.env
       TEAMS_WEBHOOK="(PowerAutomateに設定したTEAMS WEBHOOKのURL)"
       MENTION_USERID="(TeamsのアカウントID)"
       MENTION_USERNAME="(Teamsでメンションに表示する名前)"
       ```
 
-   1. 通知先のMSTeamsのインスタンスを作成
+   1. 通知先の MSTeams のインスタンスを作成
 
-     ```
-     myteams = MSTeams(WEBHOOK_URL, MENTION_USERID, MENTION_USERNAME)
-     ```
-     
-   1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数に、通知するMSTeamsのインスタンスを指定する
+   ```
+   myteams = MSTeams(WEBHOOK_URL, MENTION_USERID, MENTION_USERNAME)
+   ```
+
+   1. `weather.py`の`__main__`にて、`printJMAwarningsInfo()`の 3 番目の引数に、通知する MSTeams のインスタンスを指定する
 
    （例）下記のようにメンション付きで通知できる
    ![MS Teams Message Sample by Incomming Webhook](./image/MSTeamsSample.png)
@@ -117,3 +116,8 @@ sqlite を使い、下記を実現する
 
 - WSL2 Ubuntu 20.04.6 LTS on Windows 11 Professional
 - Python 3.10.3
+
+## 参照
+
+- MS Teams へメンション付きで投稿をするには adaptivecard を使うことで可能となる
+  - [Learn]>[Microsoft Team]s>[Teams でカードを書式設定する]>[アダプティブ カード内でのサポートのメンション](https://learn.microsoft.com/ja-jp/microsoftteams/platform/task-modules-and-cards/cards/cards-format?tabs=adaptive-md%2Cdesktop%2Cconnector-html#mention-support-within-adaptive-cards)
