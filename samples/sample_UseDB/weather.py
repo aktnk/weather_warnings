@@ -6,12 +6,17 @@ from db_setting import session
 from models import CityReport, Extra, VPWW54xml
 from JMAFeed import JMAFeed, VPWW54XMLData
 from MSteams import MSTeams
+from gmail import Gmail
 from weather_DB import deleteCityReportByLMO, deleteVPWW54xmlByLMO, deleteCityReportByStatus, updateCityReportByStatus, updateCityReportByXmlfile, checkCityAndKindDataSameInCityReport, addVPWW54xml, createCityReport
 
 load_dotenv()
 WEBHOOK_URL = os.getenv('TEAMS_WEBHOOK')
 MENTION_USERID = os.getenv('MENTION_USERID')
 MENTION_USERNAME = os.getenv('MENTION_USERNAME')
+GMAIL_APP_PASS = os.getenv('GMAIL_APP_PASS')
+GMAIL_FROM = os.getenv('GMAIL_FROM')
+EMAIL_TO = os.getenv('EMAIL_TO')
+EMAIL_BCC = os.getenv('EMAIL_BCC')
 
 def printJMAwarningsInfo(feed, obs, cities, teams = None):
     entry = feed.getLatestVPWW54EntryByLMO(obs)
@@ -36,6 +41,7 @@ def printJMAwarningsInfo(feed, obs, cities, teams = None):
                     continue
                 # lmoがobsで、cityがcity、kind_nameがitem['kindName']、statusがitem['status']があるか
                 ret, report = checkCityAndKindDataSameInCityReport(obs,warning.areaName,item['kindName'])
+                #print(f"checkCityAndKindDataSameInCityReport:{ret}")
                 if ret:
                     # 同じ市町で同じ警報・注意報のデータあり
                     if report.status != item['status']:
@@ -63,12 +69,13 @@ def printJMAwarningsInfo(feed, obs, cities, teams = None):
 
 if __name__ == '__main__':
     print(f"******** start: {datetime.datetime.now()}")
-    print(f"{WEBHOOK_URL}")
-    print(f"{MENTION_USERID} : {MENTION_USERNAME}")
-    myteams = MSTeams(WEBHOOK_URL, MENTION_USERID, MENTION_USERNAME)
-
+    # print(f"{WEBHOOK_URL}")
+    # print(f"{MENTION_USERID} : {MENTION_USERNAME}")
+    #myteams = MSTeams(WEBHOOK_URL, MENTION_USERID, MENTION_USERNAME)
+    mygmail = Gmail(GMAIL_FROM, GMAIL_APP_PASS, EMAIL_TO, EMAIL_BCC)
+    
     feed = JMAFeed()
-    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], myteams)
+    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], mygmail)
     #printJMAwarningsInfo(feed, '松山地方気象台',['松山市'])
     #printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'], myteams)
     #printJMAwarningsInfo(feed, '宮崎地方気象台',['都城市'])
