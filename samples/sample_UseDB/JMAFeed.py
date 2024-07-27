@@ -179,29 +179,35 @@ class VPWW54XMLData:
                 for item in warning['Item']:
                     # Area>NameタグとChangeStatusタグの取得
                     if 'ChangeStatus' in item:
+                        #print(f"item : changestatus")
                         city_warnings = VPWW54BodyWarningTypeCity(
                             area_name=item['Area']['Name'],
                             change_status = item['ChangeStatus']
                         )
                     else:
+                        #print(f"item : non changestatus")
                         city_warnings = VPWW54BodyWarningTypeCity(
                             area_name=item['Area']['Name'],
                             change_status = None
                         )
                     # Kindタグ情報の取得
-                    if type(item['Kind']) is dict:
+                    #print(f"!!!type") #:{item['Kind']}")
+                    if isinstance((item['Kind']),dict):
+                        #print(f"## item dict")
                         if 'Name' in item['Kind']:
+                            #print(f"{item['Kind']['Name']} : {item['Kind']['Status']}")
                             city_warnings.addKind(
                                 kind_name = item['Kind']['Name'],
                                 status = item['Kind']['Status']
                             )
                         else:
+                            #print(f"### None") #: {item['Kind']['Status']}")
                             city_warnings.addKind(
                                 kind_name = None,
                                 status = item['Kind']['Status']
                             )
                     elif type(item['Kind']) is list:
-
+                        #print(f"#### item list") #:{item['Kind']}")
                         for kind in item['Kind']:
                             city_warnings.addKind(
                                 kind_name = kind['Name'],
@@ -209,6 +215,7 @@ class VPWW54XMLData:
                             )
                     # 解析結果をwarnings属性へ追加
                     if city_warnings is not None:
+                        #print(f"append:{city_warnings}")
                         self.warnings.append( city_warnings )
 
     def getCityWarnings( self, city ):
@@ -220,8 +227,8 @@ class VPWW54XMLData:
             self.analyzeAll()
             #print("analyzeAll:::")
         for warning in self.warnings:
-            #print(warning)
             if warning.areaName == city:
+                #print(f"{warning}")
                 return warning, self.control, self.head
                 
 
