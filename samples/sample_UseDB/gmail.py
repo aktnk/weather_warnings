@@ -15,13 +15,14 @@ class Gmail:
 
     def __create_message(self, obs, city, warning, status, dt):
         dts = dt.strftime("%Y/%m/%d %H:%M:%S")
-        body = f" {obs} {dts} 発表\n"
-        if status in ['発表']:
-            body += f" {city} に {warning} が {status} されました。\n"
-        else:
-            body += f" {city} に {warning} の {status} が発表されました。\n"
-        body += f" 気象庁｜{JMAWebURLs.getLink(city)[0]}の警報・注意報は\n {JMAWebURLs.getLink(city)[1]}\n で確認できます。"
- 
+        body = f"LWO:{obs}\nDATE:{dts}\nCITY:{city}\nWARN:{warning}\nSTAT:{status}\n"
+        #if status in ['発表']:
+        #    body += f" {city} に {warning} が {status} されました。\n"
+        #else:
+        #    body += f" {city} に {warning} の {status} が発表されました。\n"
+        #body += f" 気象庁｜{JMAWebURLs.getLink(city)[0]}の警報・注意報は\n {JMAWebURLs.getLink(city)[1]}\n で確認できます。"
+        body += f"LINK:気象庁｜{JMAWebURLs.getLink(city)[0]}の警報・注意報\nURL:{JMAWebURLs.getLink(city)[1]}\nEND"
+
         msg=MIMEText(body)
         msg["Subject"]=f"{city}:{warning}:{status}"
         msg["From"]=self.gmail_from
@@ -52,7 +53,7 @@ if __name__=="__main__":
     EMAIL_TO = os.getenv('EMAIL_TO')
     EMAIL_BCC = os.getenv('EMAIL_BCC')
 
-    city = "三島市"
+    city = "テスト市"
     warning = "テスト大雨注意報"
     status = "発表"
 
