@@ -116,6 +116,7 @@ def deleteCityReportByLMO(obs):
     """
     reports = session.query(CityReport).filter(
         CityReport.lmo == obs,
+        CityReport.status == '解除',
         CityReport.is_delete == False).all()
     for report in reports:
         print(f"**delete CR table: {report.id}, {report.lmo}, {report.xmlfile}, {report.city}, {report.kind_name}, {report.status}, {report.is_delete}")
