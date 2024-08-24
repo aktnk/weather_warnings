@@ -21,7 +21,7 @@ EMAIL_BCC = os.getenv('EMAIL_BCC')
 def printJMAwarningsInfo(feed, obs, cities, teams = None):
     entry = feed.getLatestVPWW54EntryByLMO(obs)
     if entry is None:
-        print(f"**{obs}では現在警報・注意報の発表なし")
+        print(f"**{obs}の情報はextra.xmlになし")
         # lmoがobsのデータのデータ（の中で注意報はstatusが解除、警報は解除でなくても）は削除
         deleteCityReportByLMO(obs)
         deleteVPWW54xmlByLMO(obs)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     mygmail = Gmail(GMAIL_FROM, GMAIL_APP_PASS, EMAIL_TO, EMAIL_BCC)
     
     feed = JMAFeed()
-    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市','三島市','熱海市'], mygmail)
+    printJMAwarningsInfo(feed, '静岡地方気象台',['裾野市','御殿場市'], mygmail)
     #printJMAwarningsInfo(feed, '松山地方気象台',['松山市'])
     #printJMAwarningsInfo(feed, '旭川地方気象台',['士別市'], myteams)
     #printJMAwarningsInfo(feed, '宮崎地方気象台',['都城市'])
