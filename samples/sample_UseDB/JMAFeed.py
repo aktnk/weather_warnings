@@ -1,3 +1,4 @@
+# import logging
 import requests
 import xmltodict
 import datetime
@@ -10,6 +11,7 @@ from models import CityReport, Extra, VPWW54xml
 
 from weather_DB import deleteCityReportByLMO, deleteVPWW54xmlByLMO, deleteCityReportByStatus, updateCityReportByStatus, updateCityReportByXmlfile, checkCityAndKindDataSameInCityReport, addVPWW54xml, createCityReport
 
+# logging.basicConfig(level=logging.DEBUG)
 load_dotenv()
 DATADIR = os.getenv('DATADIR')
 
@@ -25,6 +27,11 @@ class JMAFeed:
         self.dict = None
         self.LMO = ""
         self.VPWW54list = []
+        self.http_session = requests.Session()
+
+    def __del__(self):
+        print("request session close")
+        self.http_session.close()
 
     def readExtraFile(self):
         """
@@ -38,7 +45,8 @@ class JMAFeed:
         else:
             # extra.xmlファイルが存在しないとき
             time = datetime.datetime.now()
-            response = requests.get(JMAFeed.EXTRA).content
+            http_response = self.http_session.get(JMAFeed.EXTRA, timeout=10)
+            response = http_response.content
             with open(JMAFeed.FILENAME, mode='wb') as f:
                 f.write(response)
             updateExtraDownloadedTime(time)
@@ -52,7 +60,8 @@ class JMAFeed:
             response = self.readExtraFile()
         else:
             time = datetime.datetime.now()
-            response = requests.get( url ).content
+            http_response = self.http_session.get(url,timeout=10)
+            response = http_response.content
             with open(JMAFeed.FILENAME, mode='wb') as f:
                 f.write(response)
             updateExtraDownloadedTime(time)
@@ -119,12 +128,13 @@ class VPWW54XMLData:
     VPWW54形式のXMLデータのクラス
     """
     
-    def __init__(self, url, obs):
+    def __init__(self, url, obs, feedobj):
         self.url = url
         self.filename = url.split('/')[-1]
         self.warnings = []
         self.dict = {}
         self.lmo = obs
+        self.feedobj = feedobj
 
     def getData(self):
         """
@@ -136,7 +146,7 @@ class VPWW54XMLData:
             print(f"xmlfile read:{self.filename}")
             response = self.readXMLfile(filepath)
         else:
-            response = requests.get(self.url).content
+            response = self.feedobj.http_session.get(self.url,timeout=10).content
             print(f"xmlfile download 1:{self.filename}")
             addVPWW54xml(self.lmo, self.filename)
             with open(filepath, mode='wb') as f:

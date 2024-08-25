@@ -26,7 +26,7 @@ def printJMAwarningsInfo(feed, obs, cities, teams = None):
         deleteCityReportByLMO(obs)
         deleteVPWW54xmlByLMO(obs)
     else:
-        vpww54 = VPWW54XMLData( url = entry.id, obs = obs )
+        vpww54 = VPWW54XMLData( url = entry.id, obs = obs, feedobj = feed )
         for city in cities:
             warning, control, head = vpww54.getCityWarnings(city)
             print(f"=== {city} ===")
@@ -81,6 +81,7 @@ if __name__ == '__main__':
     #printJMAwarningsInfo(feed, '宮崎地方気象台',['都城市'])
     #printJMAwarningsInfo(feed, '鹿児島地方気象台',['南九州市'])
     #printJMAwarningsInfo(feed, '青森地方気象台',['つがる市'], myteams)
+    del feed
 
     print(f"******** end: {datetime.datetime.now()}")
     
