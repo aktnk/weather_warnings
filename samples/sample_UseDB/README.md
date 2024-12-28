@@ -110,6 +110,41 @@ sqlite を使い、下記を実現する
    (venv310) $
    ```
 
+1. 指定した日数より前のデータを削除する
+
+- `remove_data.py` の `period = 30` で指定した日数をデフォルトで 30 日としている
+
+  ```
+  if __name__ == '__main__':
+    print(f"filepath:{__file__}")
+    print(f"dirname:{os.path.dirname(__file__)}")
+    period = 30
+    targetpath = os.path.join(os.path.dirname(__file__), "del","*.xml")
+    deleteFileBefore(targetpath, days = period)
+    deleteCityReportBefore( days = period )
+    deleteVPWW54xmlBefore( days = period )
+  ```
+
+- 削除の実行は下記のように remove_data.py を実行すればよい
+  ```
+  (venv310) $ python remove_data.py
+  filepath:/home/aktnk/projects/weather_warnings/samples/sample_UseDB/remove_data.py
+  dirname:/home/aktnk/projects/weather_warnings/samples/sample_UseDB
+  20240726124741_0_VPWW54_220000.xml:2024-07-26 21:57:07.146880
+  2024-11-28 18:07:04.510635
+  20240726124741_0_VPWW54_220000.xml:2024-07-26 21:57:07.146880:remove
+  20240723120410_0_VPWW54_220000.xml:2024-07-23 21:08:06.705197
+  2024-11-28 18:07:04.510698
+  20240723120410_0_VPWW54_220000.xml:2024-07-23 21:08:06.705197:remove
+  20240722120415_0_VPWW54_220000.xml:2024-07-23 00:28:07.464098
+  2024-11-28 18:07:04.510742
+  20240824141623_0_VPWW54_220000.xml:2024-08-24 23:40:42.268878:remove
+  **delete CR table: 1, 静岡地方気象台, 20240826124631_0_VPWW54_220000.xml, 裾野市, 雷注意報, 継続, True
+  **delete CR table: 2, 静岡地方気象台, 20240826124631_0_VPWW54_220000.xml, 御殿場市, 雷注意報, 継続, True
+  **remove xmlfile: 2, 静岡地方気象台, 20240826124631_0_VPWW54_220000.xml, True
+  (venv310) $
+  ```
+
 ## 動作確認環境
 
 本サンプルは下記環境にて動作確認を実施
