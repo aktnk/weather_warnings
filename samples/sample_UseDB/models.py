@@ -15,6 +15,7 @@ class Extra(Base):
     }
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
+    last_modified = Column('last_modified', String(50))
     downloaded_at = Column('downloaded_at', DateTime, default=datetime.now(pytz.timezone('Asia/Tokyo')))
 
 class VPWW54xml(Base):

@@ -1,4 +1,4 @@
-# import logging
+import logging
 import requests
 import xmltodict
 import datetime
@@ -11,7 +11,7 @@ from models import CityReport, Extra, VPWW54xml
 
 from weather_DB import deleteCityReportByLMO, deleteVPWW54xmlByLMO, deleteCityReportByStatus, updateCityReportByStatus, updateCityReportByXmlfile, checkCityAndKindDataSameInCityReport, addVPWW54xml, createCityReport
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 load_dotenv()
 DATADIR = os.getenv('DATADIR')
 
@@ -42,29 +42,62 @@ class JMAFeed:
         if (os.path.isfile(JMAFeed.FILENAME)):
             with open(JMAFeed.FILENAME, mode="r", encoding='utf-8') as f:
                 response = f.read()
+            last_modified = "file"
+            #print(f"readExtraFilre()1:{response}")
         else:
-            # extra.xmlファイルが存在しないとき
+            # extra.xmlファイルが存在しないとき、If-Modified-Sinceなしで取得する
             time = datetime.datetime.now()
             http_response = self.http_session.get(JMAFeed.EXTRA, timeout=10)
+            print(f"readExtraFile()2:{http_response.status_code}")
             response = http_response.content
+            if "Last-Modified" in http_response.headers:
+                last_modified = http_response.headers['Last-Modified']
+            else: # レスポンスにLast-Modifiedが含まれなかったとき
+                last_modified = "na"
             with open(JMAFeed.FILENAME, mode='wb') as f:
                 f.write(response)
-            updateExtraDownloadedTime(time)
-        return response
+            updateExtraData(last_modified, time)
+        return response, last_modified
 
     def getFeed(self, url=EXTRA):
         """
         url から Feed を取得し、dict形式で結果を保持する
         """
-        if isExtraWithin10Minutes():
-            response = self.readExtraFile()
+        last_modified = getExtraLastModified()
+        if last_modified == "na":
+            req_header = {}
         else:
-            time = datetime.datetime.now()
-            http_response = self.http_session.get(url,timeout=10)
+            req_header = { 'If-Modified-Since': last_modified }
+        print(f"request_header:{req_header}")
+        
+        time = datetime.datetime.now()
+        http_response = self.http_session.get(url,headers = req_header,timeout=10)
+        if "Last-Modified" in http_response.headers:
+            print(f"Last-Modified: {http_response.headers['Last-Modified']}")
+        if "Cache-Control" in http_response.headers:
+            print(f"Cache-Control: {http_response.headers['Cache-Control']}")
+        print(http_response.status_code)
+        if http_response.status_code == 304: # Not Modified
+            print("extra.xml:304")
+            response, lm = self.readExtraFile()
+            if lm == "file": # 304を受け取ったときにレスポンスで返されたLast-Modifiedを使用
+                if "Last-Modified" in http_response.headers:
+                    last_modified = http_response.headers['Last-Modified']
+                else:
+                    last_modified = "na"
+            else:
+                last_modified = lm
+        else: # レスポンスにextra.xmlが含まれるはず
+            print(f"extra.xml:{http_response.status_code}")
             response = http_response.content
+            if "Last-Modified" in http_response.headers:
+                last_modified = http_response.headers['Last-Modified']
+            else:
+                last_modified = "na"
             with open(JMAFeed.FILENAME, mode='wb') as f:
                 f.write(response)
-            updateExtraDownloadedTime(time)
+            updateExtraData(last_modified, time)
+
         self.dict = xmltodict.parse( response )
 
     def analyzeVPWW54ListbyLMO(self, obs):
@@ -313,16 +346,39 @@ def isExtraWithin10Minutes():
             print("without 9 minutes")
             return False
 
-def updateExtraDownloadedTime( time ):
+def getExtraLastModified():
+    """
+    前回取得したextra.xmlのLast-Modified値をDBから取得する
+    Last-Modifiedが設定されていないかった場合は、"na"を返す
+    通常は"Sat, 24 Aug 2024 07:27:23 GMT"のようにdatetimeを返す
+
+    """
+    try:
+        extra = session.query(Extra).first()
+    except err:
+        if (not os.path.isfile(JMAFeed.FILENAME)):
+            print("Error: db file not found. Please run `python models.py`")
+        print(f"{err}")
+        sys.exit()
+
+    if extra is None:
+        print("no extra data")
+        return "na"
+    else:
+        return extra.last_modified
+
+def updateExtraData( last_modified, time ):
     """
     extra.xmlのダウンロード時間をtimeに更新する
     """
+    print(f"extra_table update:{last_modified},{time}")
     extra = session.query(Extra).first()
     if extra is None:
-        new_extra = Extra()
+        new_extra = Extra(last_modified=last_modified,downloaded_at=time)
         session.add( new_extra )
         session.commit()
     else:
+        extra.last_modified = last_modified
         extra.downloaded_at = time
         session.commit()
     session.close()
